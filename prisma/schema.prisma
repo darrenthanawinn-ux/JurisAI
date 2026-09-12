@@ -1,0 +1,74 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id              String            @id @default(uuid())
+  email           String            @unique
+  passwordHash    String
+  companyName     String
+  plan            String            @default("FREE")
+  stripeCustomerId String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  transactions    Transaction[]
+  taxNexusLogs    TaxNexusLog[]
+  invoices        Invoice[]
+  apiUsageMeters  ApiUsageMeter[]
+}
+
+model Transaction {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerEmail   String
+  amount          Float
+  currency        String   @default("USD")
+  country         String
+  state           String?
+  taxAmount       Float    @default(0.0)
+  taxRate         Float    @default(0.0)
+  jurisdiction    String
+  createdAt       DateTime @default(now())
+}
+
+model TaxNexusLog {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jurisdiction    String
+  revenueYtd      Float    @default(0.0)
+  transactionCount Int     @default(0)
+  thresholdLimit  Float
+  nexusReached    Boolean  @default(false)
+  updatedAt       DateTime @updatedAt
+}
+
+model Invoice {
+  id              String   @id @default(uuid())
+  invoiceNumber   String   @unique
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customerEmail   String
+  items           Json
+  subtotal        Float
+  taxAmount       Float
+  total           Float
+  currency        String   @default("USD")
+  pdfUrl          String?
+  createdAt       DateTime @default(now())
+}
+
+model ApiUsageMeter {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  month           String
+  requestCount    Int      @default(0)
+  updatedAt       DateTime @updatedAt
+}
